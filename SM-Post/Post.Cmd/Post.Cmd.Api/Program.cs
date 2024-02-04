@@ -1,24 +1,31 @@
+using Confluent.Kafka;
 using CQRS.Core.Commands;
 using CQRS.Core.Domain;
 using CQRS.Core.Handlers;
 using CQRS.Core.Infrastructure;
+using CQRS.Core.Producers;
 using Post.Cmd.Api.Commands;
 using Post.Cmd.Domain.Aggregates;
 using Post.Cmd.Infrasructure.Config;
 using Post.Cmd.Infrasructure.Dispatchers;
 using Post.Cmd.Infrasructure.Handlers;
+using Post.Cmd.Infrasructure.Producers;
+using Post.Cmd.Infrasructure.Repositories;
+using Post.Cmd.Infrasructure.Stores;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.Configure<MongoDbConfig>(builder.Configuration.GetSection(nameof(MongoDbConfig)));
-builder.Services.AddScoped<IEventStoreRepository, IEventStoreRepository>();
-builder.Services.AddScoped<IEventStore, IEventStore>();
+builder.Services.Configure<ProducerConfig>(builder.Configuration.GetSection(nameof(ProducerConfig)));
+builder.Services.AddScoped<IEventStoreRepository, EventStoreRepository>();
+builder.Services.AddScoped<IEventProducer, EventProducer>();
+builder.Services.AddScoped<IEventStore, EventStore>();
 builder.Services.AddScoped<IEventSourcingHandler<PostAggregate>, EventSourcingHandler>();
 builder.Services.AddScoped<ICommandHandler, CommandHandler>();
 
 //Register command handler methods
-var commandHandler = builder.Services.BuildServiceProvider().GetService<ICommandHandler>();
+var commandHandler = builder.Services.BuildServiceProvider().GetRequiredService<ICommandHandler>();
 var dispatcher = new CommandDispatcher();
 dispatcher.RegisterHandler<NewPostCommand>(commandHandler.HandleAsync);
 dispatcher.RegisterHandler<EditMessageCommand>(commandHandler.HandleAsync);
